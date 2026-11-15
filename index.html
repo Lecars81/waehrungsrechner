@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Währungsrechner</title>
+<meta name="theme-color" content="#eb0a1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Währung">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root{
+    --red:#eb0a1e; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e6e6e6;
+    --bg:#f5f5f5; --card:#fff; --ok:#1f8a4c; --warn:#b26a00;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --ink:#f2f2f2; --muted:#a0a0a0; --line:#2c2c2c; --bg:#0f0f0f; --card:#1a1a1a; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%}
+  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .wrap{max-width:520px;margin:0 auto;padding:16px}
+  header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px}
+  h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
+  h1 span{color:var(--red)}
+  .status{font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted);
+    background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+  .status.off .dot{background:var(--warn)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .row{display:flex;gap:10px;align-items:center}
+  .amount{flex:1;min-width:0;font-size:30px;font-weight:600;border:none;background:transparent;color:var(--ink);
+    outline:none;padding:6px 0;font-variant-numeric:tabular-nums}
+  .cur-btn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+    border-radius:12px;padding:10px 12px;font-size:17px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .cur-btn .flag{font-size:20px;line-height:1}
+  .cur-btn .chev{color:var(--muted);font-size:12px}
+  .label{font-size:12px;color:var(--muted);margin-bottom:2px}
+  .result{flex:1;min-width:0;font-size:30px;font-weight:700;padding:6px 0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;font-variant-numeric:tabular-nums}
+  .swap-wrap{display:flex;justify-content:center;margin:-20px 0 -8px;position:relative;z-index:2}
+  .swap{width:44px;height:44px;border-radius:50%;border:3px solid var(--bg);background:var(--red);color:#fff;
+    font-size:20px;cursor:pointer;display:grid;place-items:center}
+  .rate{font-size:13px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 8px}
+  .sec-head h2{font-size:15px;margin:0}
+  .link{background:none;border:none;color:var(--red);font-size:14px;font-weight:600;cursor:pointer;padding:4px}
+  .list .item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+  .list .item:last-child{border-bottom:none}
+  .item .flag{font-size:22px;width:28px;text-align:center}
+  .item .meta{flex:1;min-width:0}
+  .item .code{font-weight:600}
+  .item .name{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .val{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+  .item .sub{font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .foot{font-size:12px;color:var(--muted);text-align:center;margin:16px 0 8px;line-height:1.5}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:9px 14px;
+    font-size:14px;font-weight:600;cursor:pointer}
+  .empty{color:var(--muted);font-size:14px;padding:8px 2px}
+  /* Picker */
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:10}
+  .sheet.open{display:block}
+  .panel{position:absolute;left:0;right:0;bottom:0;top:8%;background:var(--card);border-radius:18px 18px 0 0;
+    display:flex;flex-direction:column;max-width:520px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
+  .panel-head{padding:14px 16px 8px;display:flex;gap:10px;align-items:center}
+  .panel-head input{flex:1;font-size:16px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--bg);color:var(--ink);outline:none}
+  .panel-list{overflow:auto;padding:0 16px 16px;-webkit-overflow-scrolling:touch}
+  .star{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px 6px}
+  .star.on{color:#f2b100}
+  .group{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 2px 2px}
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    background:#222;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .25s;
+    pointer-events:none;z-index:20}
+  .toast.show{opacity:1}
+  .install{display:none}
+  .install.show{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Währungs<span>rechner</span></h1>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">…</span></div>
+  </header>
+
+  <div class="card">
+    <div class="label">Betrag</div>
+    <div class="row">
+      <input id="amount" class="amount" inputmode="decimal" autocomplete="off" value="100" aria-label="Betrag">
+      <button class="cur-btn" id="fromBtn" data-side="from"></button>
+    </div>
+  </div>
+  <div class="swap-wrap"><button class="swap" id="swap" aria-label="Währungen tauschen">⇅</button></div>
+  <div class="card">
+    <div class="label">Ergebnis</div>
+    <div class="row">
+      <div class="result" id="result">–</div>
+      <button class="cur-btn" id="toBtn" data-side="to"></button>
+    </div>
+    <div class="rate" id="rateLine"></div>
+  </div>
+
+  <div class="sec-head">
+    <h2>Favoriten</h2>
+    <button class="link" id="editFav">Bearbeiten</button>
+  </div>
+  <div class="card list" id="favList"></div>
+
+  <div class="card install" id="installHint">
+    <div style="font-size:14px;line-height:1.5"><b>Tipp:</b> Für die Offline-Nutzung die App zum Home-Bildschirm hinzufügen –
+      iPhone: Teilen-Symbol → „Zum Home-Bildschirm“. Android: Menü ⋮ → „App installieren“.</div>
+  </div>
+
+  <div style="text-align:center"><button class="btn" id="refresh">Kurse aktualisieren</button></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="panel" role="dialog" aria-modal="true">
+    <div class="panel-head">
+      <input id="search" placeholder="Währung suchen (z. B. USD, Zloty)" autocomplete="off">
+      <button class="link" id="closeSheet">Fertig</button>
+    </div>
+    <div class="panel-list" id="pickList"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const LS = {
+    get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  };
+  const $ = id => document.getElementById(id);
+  const REFRESH_MS = 3 * 60 * 60 * 1000; // alle 3 Std. neu laden, wenn online
+
+  // Eingebaute Notfall-Kurse (EUR-Basis), nur falls nie online geladen wurde
+  const FALLBACK = { base:"EUR", date:null, source:"Eingebaut (Näherung)", rates:{
+    EUR:1, USD:1.08, GBP:0.85, CHF:0.95, PLN:4.30, CZK:25.0, HUF:395, DKK:7.46, SEK:11.4, NOK:11.7,
+    JPY:165, CNY:7.8, TRY:37, AED:3.97, CAD:1.48, AUD:1.65 } };
+
+  const POPULAR = ["EUR","USD","GBP","CHF","PLN","CZK","DKK","SEK","NOK","HUF","JPY","CNY","TRY","AED","CAD","AUD"];
+
+  let data = LS.get("fx_rates", null) || FALLBACK;
+  let state = Object.assign({ from:"EUR", to:"USD", amount:"100",
+    favs:["USD","GBP","CHF","PLN","CZK","JPY"] }, LS.get("fx_state", {}));
+  let pickSide = null, favMode = false;
+
+  const names = (() => { try { return new Intl.DisplayNames(["de"], {type:"currency"}); } catch(e){ return null; } })();
+  const curName = c => { try { return (names && names.of(c)) || c; } catch(e){ return c; } };
+
+  // Flagge aus Währungscode (erste 2 Buchstaben = Ländercode, Sonderfälle)
+  const flag = c => {
+    const special = { EUR:"🇪🇺", XAF:"🌍", XOF:"🌍", XCD:"🌎", XPF:"🌏", XDR:"🏦", ANG:"🇨🇼" };
+    if (special[c]) return special[c];
+    const cc = c.slice(0,2);
+    if (!/^[A-Z]{2}$/.test(cc)) return "💱";
+    return String.fromCodePoint(...[...cc].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+  };
+
+  const parseAmount = s => {
+    if (!s) return 0;
+    s = String(s).trim().replace(/\s/g,"");
+    // "1.234,56" oder "1234,56" oder "1234.56"
+    if (s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
+    const n = parseFloat(s);
+    return isFinite(n) ? n : 0;
+  };
+  const fmt = (n, cur) => {
+    const abs = Math.abs(n);
+    const dec = abs === 0 ? 2 : abs < 0.01 ? 6 : abs < 1 ? 4 : 2;
+    return new Intl.NumberFormat("de-DE",{minimumFractionDigits:Math.min(2,dec), maximumFractionDigits:dec}).format(n);
+  };
+  const rate = (a, b) => (data.rates[b] && data.rates[a]) ? data.rates[b] / data.rates[a] : NaN;
+  const convert = (amt, a, b) => amt * rate(a, b);
+
+  const save = () => LS.set("fx_state", state);
+
+  function toast(msg){
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  function dateText(){
+    if (!data.date) return "keine aktuellen Kurse";
+    const d = new Date(data.date);
+    return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}) +
+      (data.fetchedAt ? ", geladen " + new Date(data.fetchedAt).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) : "");
+  }
+
+  function renderStatus(){
+    const online = navigator.onLine;
+    $("status").classList.toggle("off", !online || !data.date);
+    $("statusText").textContent = online ? (data.date ? "Online" : "Lade Kurse…") : "Offline";
+    $("foot").innerHTML = "Kursstand: " + dateText() + "<br>Quelle: " + (data.source || "–") +
+      "<br>Kurse sind Referenzkurse – Bank- und Kartenkurse weichen ab.";
+  }
+
+  function curBtn(el, c){
+    el.innerHTML = `<span class="flag">${flag(c)}</span>${c}<span class="chev">▼</span>`;
+  }
+
+  function render(){
+    curBtn($("fromBtn"), state.from);
+    curBtn($("toBtn"), state.to);
+    const amt = parseAmount($("amount").value);
+    const r = rate(state.from, state.to);
+    $("result").textContent = isFinite(r) ? fmt(amt * r, state.to) : "–";
+    $("rateLine").textContent = isFinite(r)
+      ? `1 ${state.from} = ${fmt(r)} ${state.to}   ·   1 ${state.to} = ${fmt(1/r)} ${state.from}`
+      : "Kein Kurs verfügbar";
+
+    const list = $("favList");
+    const favs = state.favs.filter(c => c !== state.from && data.rates[c]);
+    if (!favs.length){ list.innerHTML = `<div class="empty">Keine Favoriten – über „Bearbeiten“ hinzufügen.</div>`; }
+    else list.innerHTML = favs.map(c => {
+      const v = convert(amt, state.from, c), r1 = rate(state.from, c);
+      return `<div class="item" data-code="${c}">
+        <div class="flag">${flag(c)}</div>
+        <div class="meta"><div class="code">${c}</div><div class="name">${curName(c)}</div></div>
+        <div><div class="val">${fmt(v)}</div><div class="sub">1 ${state.from} = ${fmt(r1)}</div></div>
+      </div>`;
+    }).join("");
+    renderStatus();
+  }
+
+  // ---------- Kurse laden ----------
+  async function fetchJSON(url){
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000);
+    try { const r = await fetch(url, {signal:ctrl.signal, cache:"no-store"}); if(!r.ok) throw new Error(r.status); return await r.json(); }
+    finally { clearTimeout(t); }
+  }
+  const SOURCES = [
+    async () => { // ~160 Währungen, tägliche Aktualisierung
+      const j = await fetchJSON("https://open.er-api.com/v6/latest/EUR");
+      if (j.result !== "success") throw new Error("er-api");
+      return { base:"EUR", rates:j.rates, date:new Date(j.time_last_update_unix*1000).toISOString(), source:"ExchangeRate-API (open.er-api.com)" };
+    },
+    async () => { // EZB-Referenzkurse
+      const j = await fetchJSON("https://api.frankfurter.dev/v1/latest?base=EUR");
+      return { base:"EUR", rates:Object.assign({EUR:1}, j.rates), date:new Date(j.date).toISOString(), source:"EZB via frankfurter.dev" };
+    }
+  ];
+
+  let loading = false;
+  async function loadRates(manual){
+    if (loading) return; loading = true;
+    if (manual) $("refresh").textContent = "Lade…";
+    try {
+      if (!navigator.onLine) throw new Error("offline");
+      let got = null;
+      for (const src of SOURCES){ try { got = await src(); break; } catch(e){} }
+      if (!got) throw new Error("no source");
+      got.rates.EUR = 1;
+      got.fetchedAt = Date.now();
+      data = got; LS.set("fx_rates", data);
+      render();
+      if (manual) toast("Kurse aktualisiert");
+    } catch(e){
+      renderStatus();
+      if (manual) toast(navigator.onLine ? "Kurse konnten nicht geladen werden" : "Offline – gespeicherte Kurse werden genutzt");
+    } finally {
+      loading = false; $("refresh").textContent = "Kurse aktualisieren";
+    }
+  }
+  const stale = () => !data.fetchedAt || (Date.now() - data.fetchedAt) > REFRESH_MS;
+
+  // ---------- Auswahlliste ----------
+  function openPicker(side){
+    pickSide = side; favMode = side === "fav";
+    $("search").value = ""; renderPick(); $("sheet").classList.add("open");
+    setTimeout(() => { if (!favMode) $("search").focus(); }, 50);
+  }
+  function closePicker(){ $("sheet").classList.remove("open"); pickSide = null; render(); }
+
+  function renderPick(){
+    const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ł/g,"l").replace(/ß/g,"ss");
+    const q = norm($("search").value.trim());
+    const all = Object.keys(data.rates).sort();
+    const match = c => !q || norm(c).includes(q) || norm(curName(c)).includes(q);
+    const row = c => {
+      const on = state.favs.includes(c);
+      return `<div class="item" data-code="${c}">
+        <div class="flag">${flag(c)}</div>
+        <div class="meta"><div class="code">${c}</div><div class="name">${curName(c)}</div></div>
+        <button class="star ${on?"on":""}" data-star="${c}" aria-label="Favorit">${on?"★":"☆"}</button>
+      </div>`;
+    };
+    const pop = POPULAR.filter(c => data.rates[c] && match(c));
+    const rest = all.filter(c => !POPULAR.includes(c) && match(c));
+    let html = "";
+    if (favMode) html += `<div class="group" style="text-transform:none;letter-spacing:0">Stern antippen, um Favoriten hinzuzufügen oder zu entfernen.</div>`;
+    if (pop.length) html += `<div class="group">Häufig</div>` + pop.map(row).join("");
+    if (rest.length) html += `<div class="group">Alle Währungen</div>` + rest.map(row).join("");
+    if (!html) html = `<div class="empty">Nichts gefunden.</div>`;
+    $("pickList").innerHTML = html;
+  }
+
+  $("pickList").addEventListener("click", e => {
+    const star = e.target.closest("[data-star]");
+    if (star){
+      const c = star.dataset.star;
+      state.favs = state.favs.includes(c) ? state.favs.filter(x => x !== c) : [...state.favs, c];
+      save(); renderPick(); return;
+    }
+    const it = e.target.closest(".item"); if (!it) return;
+    const c = it.dataset.code;
+    if (favMode){
+      state.favs = state.favs.includes(c) ? state.favs.filter(x => x !== c) : [...state.favs, c];
+      save(); renderPick(); return;
+    }
+    if (pickSide === "from"){ if (c === state.to) state.to = state.from; state.from = c; }
+    else { if (c === state.from) state.from = state.to; state.to = c; }
+    save(); closePicker();
+  });
+  $("search").addEventListener("input", renderPick);
+  $("closeSheet").addEventListener("click", closePicker);
+  $("sheet").addEventListener("click", e => { if (e.target.id === "sheet") closePicker(); });
+
+  // ---------- Bedienung ----------
+  $("fromBtn").addEventListener("click", () => openPicker("from"));
+  $("toBtn").addEventListener("click", () => openPicker("to"));
+  $("editFav").addEventListener("click", () => openPicker("fav"));
+  $("swap").addEventListener("click", () => {
+    [state.from, state.to] = [state.to, state.from]; save(); render();
+  });
+  $("amount").value = state.amount;
+  $("amount").addEventListener("input", e => {
+    e.target.value = e.target.value.replace(/[^\d.,\s]/g, "");
+    state.amount = e.target.value; save(); render();
+  });
+  $("amount").addEventListener("focus", e => e.target.select());
+  $("favList").addEventListener("click", e => {
+    const it = e.target.closest(".item"); if (!it) return;
+    state.to = it.dataset.code; save(); render(); window.scrollTo({top:0, behavior:"smooth"});
+  });
+  $("result").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("result").textContent); toast("Ergebnis kopiert"); } catch(e){}
+  });
+  $("refresh").addEventListener("click", () => loadRates(true));
+  window.addEventListener("online", () => { renderStatus(); loadRates(false); });
+  window.addEventListener("offline", renderStatus);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && navigator.onLine && stale()) loadRates(false); });
+
+  // Installationshinweis nur im Browser (nicht als installierte App)
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (!standalone) $("installHint").classList.add("show");
+
+  // Service Worker für Offline-Betrieb
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+
+  render();
+  loadRates(false);
+})();
+</script>
+</body>
+</html>
