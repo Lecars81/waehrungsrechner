@@ -124,6 +124,15 @@
   .chip.best{border-color:var(--ink);border-left:4px solid var(--red)}
   .chip small{display:block;font-size:11px;font-weight:400;color:var(--muted)}
   .manual{margin-top:14px;font-size:13px;color:var(--muted);font-weight:400}
+  .legal-link{display:block;margin:6px 0 0;font-size:12px}
+  .legal{overflow:auto;padding:0 18px 24px;-webkit-overflow-scrolling:touch;font-size:14px;line-height:1.45;font-weight:350}
+  .legal h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin:20px 0 6px}
+  .legal p{margin:0 0 8px}
+  .legal a{color:var(--ink)}
+  .consent{padding:4px 18px 22px;font-size:15px;line-height:1.45;font-weight:350}
+  .consent .btn{margin-top:10px}
+  .btn.primary{background:var(--btn-bg);color:var(--btn-ink);border-color:var(--btn-bg)}
+  .panel.short{top:auto}
   @media (prefers-color-scheme: dark){ .logo-box .logo-grey{display:none} .logo-box .logo-white{display:block} }
 </style>
 </head>
@@ -184,6 +193,7 @@
 
   <div><button class="btn" id="refresh">Kurse aktualisieren</button></div>
   <div class="foot" id="foot"></div>
+  <button class="link legal-link" id="legalBtn">Impressum &amp; Datenschutz</button>
 </div>
 
 <div class="sheet" id="sheet">
@@ -207,6 +217,59 @@
       <div class="chips" id="chips"></div>
       <div class="manual">Erkannte Preise antippen – im Foto oder in der Liste. Rot markiert = wahrscheinlichster Preis.</div>
       <div style="margin-top:14px"><button class="btn" id="retake">Neues Foto</button></div>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="gpsSheet">
+  <div class="panel short" role="dialog" aria-modal="true" aria-label="Standort per GPS">
+    <div class="panel-head"><div class="label" style="margin:0">Standort per GPS</div></div>
+    <div class="consent">
+      <p>Ohne GPS erkennt die App das Land über die Zeitzone Ihres Handys – dabei werden <b>keine Daten übertragen</b>.</p>
+      <p>Für eine genauere Erkennung kann die App Ihren GPS-Standort nutzen. Dazu werden Ihre Koordinaten und Ihre IP-Adresse an den Dienst <b>BigDataCloud</b> (Australien) übermittelt, der daraus das Land ermittelt. Die Koordinaten werden nicht gespeichert und nur bei Tipp auf die Standort-Taste gesendet.</p>
+      <p style="font-size:13px;color:var(--muted)">Ihre Entscheidung können Sie jederzeit unter „Impressum &amp; Datenschutz“ ändern.</p>
+      <button class="btn primary" id="gpsYes">GPS nutzen</button>
+      <button class="btn" id="gpsNo">Nur Zeitzone nutzen</button>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="legalSheet">
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Impressum und Datenschutz">
+    <div class="panel-head" style="justify-content:space-between">
+      <div class="label" style="margin:0">Impressum &amp; Datenschutz</div>
+      <button class="link" id="closeLegal">Fertig</button>
+    </div>
+    <div class="legal">
+      <h3>Anbieter</h3>
+      <p>Autohaus Kalla GmbH<br>Prötzeler Chaussee 14<br>15344 Strausberg<br>Telefon: 03341 30090<br>Geschäftsführer: Marco Hantsche</p>
+      <p>Vollständiges Impressum: <a href="https://www.toyota-kalla.de" rel="noopener">www.toyota-kalla.de</a></p>
+
+      <h3>Datenschutz auf einen Blick</h3>
+      <p>Diese App verwendet keine Cookies, kein Tracking, keine Analyse-Tools und keine Werbung. Es gibt kein Benutzerkonto. Wir selbst erhalten keine Daten von Ihnen.</p>
+
+      <h3>Verantwortlicher</h3>
+      <p>Verantwortlich im Sinne der DSGVO ist die oben genannte Autohaus Kalla GmbH.</p>
+
+      <h3>Bereitstellung der App (Hosting)</h3>
+      <p>Die App wird über GitHub Pages bereitgestellt (GitHub, Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, USA). Beim Aufruf verarbeitet GitHub technisch notwendige Verbindungsdaten wie Ihre IP-Adresse, Datum und Uhrzeit sowie Browser-Informationen und speichert die IP-Adresse zu Sicherheitszwecken. Rechtsgrundlage ist unser berechtigtes Interesse an einer sicheren und zuverlässigen Bereitstellung (Art. 6 Abs. 1 lit. f DSGVO). Eine Übermittlung in die USA erfolgt auf Grundlage des EU-US Data Privacy Framework bzw. von Standardvertragsklauseln. Details: <a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">Datenschutzerklärung von GitHub</a>.</p>
+
+      <h3>Abruf der Wechselkurse</h3>
+      <p>Um aktuelle Kurse anzuzeigen, ruft Ihr Gerät die Kurse direkt bei ExchangeRate-API (open.er-api.com) bzw. ersatzweise bei frankfurter.dev (Referenzkurse der Europäischen Zentralbank) ab. Dabei wird technisch bedingt Ihre IP-Adresse an diese Dienste übermittelt. Weitere Daten werden nicht gesendet. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (Bereitstellung der von Ihnen genutzten Funktion).</p>
+
+      <h3>Preis scannen (Kamera)</h3>
+      <p>Fotos von Preisschildern werden ausschließlich auf Ihrem Gerät ausgewertet. Sie werden weder hochgeladen noch gespeichert.</p>
+
+      <h3>Erkennung des Landes</h3>
+      <p>Standardmäßig ermittelt die App das Land anhand der Zeitzone Ihres Geräts. Dabei werden keine Daten übertragen.</p>
+      <p>Nur wenn Sie zugestimmt haben und auf die Standort-Taste tippen, wird Ihr GPS-Standort verwendet: Ihre Koordinaten und Ihre IP-Adresse werden an BigDataCloud Pty Ltd (Australien) übermittelt, um das Land zu bestimmen. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die Sie jederzeit widerrufen können. Australien verfügt über keinen Angemessenheitsbeschluss der EU-Kommission; die Übermittlung erfolgt auf Grundlage Ihrer ausdrücklichen Einwilligung (Art. 49 Abs. 1 lit. a DSGVO).</p>
+      <p>Status: <b id="gpsState">–</b></p>
+      <button class="btn" id="gpsToggle"></button>
+
+      <h3>Speicherung auf Ihrem Gerät</h3>
+      <p>Damit die App offline funktioniert, speichert sie die zuletzt geladenen Kurse, Ihre Einstellungen (Währungen, Favoriten, Betrag, GPS-Entscheidung) sowie die App-Dateien im Speicher Ihres Browsers. Diese Daten verlassen Ihr Gerät nicht. Die Speicherung ist für die von Ihnen gewünschte Funktion unbedingt erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Sie können die Daten jederzeit löschen, indem Sie die App bzw. die Website-Daten in Ihrem Browser entfernen.</p>
+
+      <h3>Ihre Rechte</h3>
+      <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch (Art. 15–21 DSGVO) sowie das Recht, eine erteilte Einwilligung zu widerrufen. Wenden Sie sich dazu an die oben genannten Kontaktdaten. Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. bei der Landesbeauftragten für den Datenschutz und für das Recht auf Akteneinsicht Brandenburg.</p>
+      <p style="color:var(--muted);font-size:12px">Stand: November 2026</p>
     </div>
   </div>
 </div>
@@ -480,7 +543,34 @@
       } catch(e){ fallback(); }
     }, fallback, {enableHighAccuracy:false, timeout:10000, maximumAge:600000});
   }
-  $("locBtn").addEventListener("click", preciseDetect);
+  // Einwilligung für GPS: null = noch nicht gefragt, true/false = Entscheidung des Kunden
+  const gpsConsent = () => LS.get("gps_consent", null);
+  function timezoneDetect(){
+    const cc = countryFromTimezone();
+    if (cc) applyCountry(cc, true); else { setLocText(null); toast("Land nicht erkannt"); }
+  }
+  function onLocTap(){
+    const c = gpsConsent();
+    if (c === null) { $("gpsSheet").classList.add("open"); return; }
+    if (c === true) preciseDetect(); else timezoneDetect();
+  }
+  $("locBtn").addEventListener("click", onLocTap);
+  $("gpsYes").addEventListener("click", () => { LS.set("gps_consent", true); $("gpsSheet").classList.remove("open"); renderLegal(); preciseDetect(); });
+  $("gpsNo").addEventListener("click", () => { LS.set("gps_consent", false); $("gpsSheet").classList.remove("open"); renderLegal(); timezoneDetect(); });
+  $("gpsSheet").addEventListener("click", e => { if (e.target.id === "gpsSheet") $("gpsSheet").classList.remove("open"); });
+
+  // Impressum & Datenschutz
+  function renderLegal(){
+    const c = gpsConsent();
+    $("gpsState").textContent = c === true ? "GPS-Nutzung erlaubt" : c === false ? "GPS-Nutzung abgelehnt" : "noch nicht entschieden";
+    $("gpsToggle").textContent = c === true ? "Einwilligung widerrufen" : "GPS-Nutzung erlauben";
+  }
+  $("gpsToggle").addEventListener("click", () => {
+    const c = gpsConsent(); LS.set("gps_consent", c === true ? false : true); renderLegal();
+    toast(c === true ? "Einwilligung widerrufen" : "GPS-Nutzung erlaubt");
+  });
+  $("legalBtn").addEventListener("click", () => { renderLegal(); $("legalSheet").classList.add("open"); });
+  $("closeLegal").addEventListener("click", () => $("legalSheet").classList.remove("open"));
 
   // ================= Preis scannen (Texterkennung auf dem Gerät) =================
   const OCR_CACHE = "wr-ocr-v1";
