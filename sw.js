@@ -1,7 +1,9 @@
 // Service Worker: hält die App offline verfügbar.
 // Kurse selbst werden von der App im Gerätespeicher (localStorage) gesichert.
-const CACHE = "waehrungsrechner-v1";
-const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
+const CACHE = "waehrungsrechner-v2";
+const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
+  "./assets/toyota-ellipse-grey.png", "./assets/toyota-ellipse-white.png", "./assets/gr-yaris.webp",
+  "./fonts/ToyotaType-Light.woff2", "./fonts/ToyotaType-Book.woff2", "./fonts/ToyotaType-Regular.woff2", "./fonts/ToyotaType-Semibold.woff2"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

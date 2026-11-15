@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Währungsrechner</title>
-<meta name="theme-color" content="#eb0a1e">
+<meta name="theme-color" content="#EFF0F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#282830" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="fonts/ToyotaType-Light.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/ToyotaType-Semibold.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,81 +16,112 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+  @font-face{font-family:"Toyota Type";src:url(fonts/ToyotaType-Light.woff2) format("woff2");font-weight:300;font-display:swap}
+  @font-face{font-family:"Toyota Type";src:url(fonts/ToyotaType-Book.woff2) format("woff2");font-weight:350;font-display:swap}
+  @font-face{font-family:"Toyota Type";src:url(fonts/ToyotaType-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:"Toyota Type";src:url(fonts/ToyotaType-Semibold.woff2) format("woff2");font-weight:600;font-display:swap}
+  /* Toyota VI 2026: Signature Grey #282830, Signature Red #FF0022 (nur Akzent), White, Greys 1–6 */
   :root{
-    --red:#eb0a1e; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e6e6e6;
-    --bg:#f5f5f5; --card:#fff; --ok:#1f8a4c; --warn:#b26a00;
+    --sig-grey:#282830; --red:#FF0022; --white:#fff;
+    --g1:#494950; --g2:#6A6B70; --g3:#8B8C90; --g4:#ADADB0; --g5:#CECFD0; --g6:#EFF0F0;
+    --ink:var(--sig-grey); --muted:var(--g2); --line:var(--g5); --bg:var(--g6);
+    --card:rgba(255,255,255,.8); --field:var(--g6); --btn-bg:var(--sig-grey); --btn-ink:#fff;
+    --car-opacity:.42;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --ink:#f2f2f2; --muted:#a0a0a0; --line:#2c2c2c; --bg:#0f0f0f; --card:#1a1a1a; }
+    :root{ --ink:#fff; --muted:var(--g4); --line:var(--g1); --bg:var(--sig-grey);
+      --card:rgba(73,73,80,.62); --field:rgba(40,40,48,.6); --btn-bg:#fff; --btn-ink:var(--sig-grey); --car-opacity:.3; }
+    .logo-box .logo-grey{display:none} .logo-box .logo-white{display:block}
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    -webkit-text-size-adjust:100%}
-  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  .wrap{max-width:520px;margin:0 auto;padding:16px}
-  header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px}
-  h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em}
-  h1 span{color:var(--red)}
-  .status{font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted);
-    background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
-  .status.off .dot{background:var(--warn)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+    font-family:"Toyota Type",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-weight:350;-webkit-text-size-adjust:100%}
+  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);min-height:100vh}
+  /* GR Yaris dezent im Hintergrund */
+  .bg-car{position:absolute;top:calc(env(safe-area-inset-top) + 44px);right:max(-32vw,calc(50% - 520px));width:min(118vw,640px);
+    opacity:var(--car-opacity);pointer-events:none;z-index:0;user-select:none;-webkit-user-drag:none;
+    -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 55%);mask-image:linear-gradient(to right,transparent 0%,#000 55%)}
+  body{position:relative}
+  .wrap{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:22px 22px 28px}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:26px}
+  .logo{width:40px;height:auto;display:block}
+  .logo-box .logo-white{display:none}
+  .headline{margin:0 0 18px}
+  .headline .bar{display:block;width:44px;height:4px;background:var(--red);margin-bottom:12px}
+  h1{font-size:30px;margin:0;font-weight:300;letter-spacing:.01em;line-height:1;text-transform:uppercase}
+  .headline p{margin:8px 0 0;font-size:14px;color:var(--muted);font-weight:400}
+  .status{font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:400;
+    background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px;margin-top:4px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ink)}
+  .status.off .dot{background:var(--red)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:14px 16px;margin-bottom:12px;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
   .row{display:flex;gap:10px;align-items:center}
-  .amount{flex:1;min-width:0;font-size:30px;font-weight:600;border:none;background:transparent;color:var(--ink);
-    outline:none;padding:6px 0;font-variant-numeric:tabular-nums}
-  .cur-btn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
-    border-radius:12px;padding:10px 12px;font-size:17px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .amount{flex:1;min-width:0;font-family:inherit;font-size:32px;font-weight:300;border:none;background:transparent;color:var(--ink);
+    outline:none;padding:4px 0;font-variant-numeric:tabular-nums}
+  .cur-btn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--field);color:var(--ink);
+    border-radius:4px;padding:10px 12px;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap}
   .cur-btn .flag{font-size:20px;line-height:1}
-  .cur-btn .chev{color:var(--muted);font-size:12px}
-  .label{font-size:12px;color:var(--muted);margin-bottom:2px}
-  .result{flex:1;min-width:0;font-size:30px;font-weight:700;padding:6px 0;overflow:hidden;text-overflow:ellipsis;
+  .cur-btn .chev{color:var(--muted);font-size:11px}
+  .label{font-size:11px;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.08em;font-weight:400}
+  .result{flex:1;min-width:0;font-size:32px;font-weight:400;padding:4px 0;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;font-variant-numeric:tabular-nums}
   .swap-wrap{display:flex;justify-content:center;margin:-20px 0 -8px;position:relative;z-index:2}
-  .swap{width:44px;height:44px;border-radius:50%;border:3px solid var(--bg);background:var(--red);color:#fff;
-    font-size:20px;cursor:pointer;display:grid;place-items:center}
-  .rate{font-size:13px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums}
-  .sec-head{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 8px}
-  .sec-head h2{font-size:15px;margin:0}
-  .link{background:none;border:none;color:var(--red);font-size:14px;font-weight:600;cursor:pointer;padding:4px}
-  .list .item{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+  .swap{width:44px;height:44px;border-radius:50%;border:3px solid var(--bg);background:var(--btn-bg);color:var(--btn-ink);
+    font-size:19px;cursor:pointer;display:grid;place-items:center}
+  .rate{font-size:13px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums;font-weight:400}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;margin:22px 2px 8px}
+  .sec-head h2{font-size:12px;margin:0;font-weight:400;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .link{background:none;border:none;color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:4px;
+    text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--g4)}
+  .list .item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
   .list .item:last-child{border-bottom:none}
   .item .flag{font-size:22px;width:28px;text-align:center}
   .item .meta{flex:1;min-width:0}
   .item .code{font-weight:600}
-  .item .name{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .name{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
   .item .val{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
-  .item .sub{font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
-  .foot{font-size:12px;color:var(--muted);text-align:center;margin:16px 0 8px;line-height:1.5}
-  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:9px 14px;
-    font-size:14px;font-weight:600;cursor:pointer}
-  .empty{color:var(--muted);font-size:14px;padding:8px 2px}
-  /* Picker */
-  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:10}
+  .item .sub{font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;font-weight:400}
+  .foot{font-size:11px;color:var(--muted);text-align:left;margin:18px 0 8px;line-height:1.4;font-weight:350}
+  .btn{border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:4px;padding:11px 18px;
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;width:100%}
+  .empty{color:var(--muted);font-size:14px;padding:8px 0}
+  /* Auswahlliste */
+  .sheet{position:fixed;inset:0;background:rgba(40,40,48,.45);display:none;z-index:10}
   .sheet.open{display:block}
-  .panel{position:absolute;left:0;right:0;bottom:0;top:8%;background:var(--card);border-radius:18px 18px 0 0;
+  .panel{position:absolute;left:0;right:0;bottom:0;top:8%;background:var(--bg);border-radius:8px 8px 0 0;
     display:flex;flex-direction:column;max-width:520px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
-  .panel-head{padding:14px 16px 8px;display:flex;gap:10px;align-items:center}
-  .panel-head input{flex:1;font-size:16px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);
-    background:var(--bg);color:var(--ink);outline:none}
+  .panel-head{padding:16px 16px 8px;display:flex;gap:10px;align-items:center}
+  .panel-head input{flex:1;font-family:inherit;font-size:16px;padding:11px 12px;border-radius:4px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);outline:none}
   .panel-list{overflow:auto;padding:0 16px 16px;-webkit-overflow-scrolling:touch}
-  .star{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px 6px}
-  .star.on{color:#f2b100}
-  .group{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 2px 2px}
+  .star{background:none;border:none;font-size:20px;cursor:pointer;color:var(--g4);padding:4px 6px}
+  .star.on{color:var(--ink)}
+  .group{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 2px;font-weight:400}
   .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);
-    background:#222;color:#fff;padding:10px 16px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .25s;
-    pointer-events:none;z-index:20}
+    background:var(--sig-grey);color:#fff;padding:10px 16px;border-radius:4px;font-size:14px;opacity:0;transition:opacity .25s;
+    pointer-events:none;z-index:20;border-left:4px solid var(--red)}
   .toast.show{opacity:1}
-  .install{display:none}
+  .install{display:none;font-weight:400}
   .install.show{display:block}
+  @media (prefers-color-scheme: dark){ .logo-box .logo-grey{display:none} .logo-box .logo-white{display:block} }
 </style>
 </head>
 <body>
+<img class="bg-car" src="assets/gr-yaris.webp" alt="" aria-hidden="true">
 <div class="wrap">
-  <header>
-    <h1>Währungs<span>rechner</span></h1>
+  <div class="topbar">
+    <div class="logo-box">
+      <img class="logo logo-grey" src="assets/toyota-ellipse-grey.png" alt="Toyota">
+      <img class="logo logo-white" src="assets/toyota-ellipse-white.png" alt="Toyota">
+    </div>
     <div class="status" id="status"><span class="dot"></span><span id="statusText">…</span></div>
+  </div>
+  <header class="headline">
+    <span class="bar"></span>
+    <h1>Währungsrechner</h1>
+    <p>Aktuelle Kurse – auch offline verfügbar</p>
   </header>
 
   <div class="card">
@@ -118,7 +152,7 @@
       iPhone: Teilen-Symbol → „Zum Home-Bildschirm“. Android: Menü ⋮ → „App installieren“.</div>
   </div>
 
-  <div style="text-align:center"><button class="btn" id="refresh">Kurse aktualisieren</button></div>
+  <div><button class="btn" id="refresh">Kurse aktualisieren</button></div>
   <div class="foot" id="foot"></div>
 </div>
 
