@@ -105,6 +105,25 @@
   .toast.show{opacity:1}
   .install{display:none;font-weight:400}
   .install.show{display:block}
+  /* Aktionen: Scannen & Standort */
+  .actions{display:flex;gap:8px;margin:0 0 14px}
+  .pill{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);border-radius:4px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:8px 10px}
+  .pill svg{width:18px;height:18px;flex:none}
+  .pill .sub{font-weight:400;color:var(--muted)}
+  .scan-body{overflow:auto;padding:0 16px 16px;-webkit-overflow-scrolling:touch}
+  .shot{position:relative;border-radius:4px;overflow:hidden;background:#000;line-height:0}
+  .shot img{width:100%;height:auto;display:block;opacity:.92}
+  .box{position:absolute;border:2px solid #fff;outline:1px solid rgba(40,40,48,.5);border-radius:3px;background:rgba(255,255,255,.12);cursor:pointer;padding:0}
+  .box.best{border-color:var(--red)}
+  .scan-status{font-size:14px;color:var(--muted);margin:12px 0 4px;font-weight:400}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:4px;padding:10px 14px;
+    font-family:inherit;font-size:18px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+  .chip.best{border-color:var(--ink);border-left:4px solid var(--red)}
+  .chip small{display:block;font-size:11px;font-weight:400;color:var(--muted)}
+  .manual{margin-top:14px;font-size:13px;color:var(--muted);font-weight:400}
   @media (prefers-color-scheme: dark){ .logo-box .logo-grey{display:none} .logo-box .logo-white{display:block} }
 </style>
 </head>
@@ -124,6 +143,17 @@
     <p>Aktuelle Kurse – auch offline verfügbar</p>
   </header>
 
+  <div class="actions">
+    <button class="pill" id="scanBtn" aria-label="Preis mit der Kamera scannen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 12h8"/></svg>
+      Preis scannen
+    </button>
+    <button class="pill" id="locBtn" aria-label="Währung über den Standort erkennen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+      <span id="locText">Standort</span>
+    </button>
+  </div>
+  <input type="file" id="scanInput" accept="image/*" capture="environment" hidden>
   <div class="card">
     <div class="label">Betrag</div>
     <div class="row">
@@ -163,6 +193,21 @@
       <button class="link" id="closeSheet">Fertig</button>
     </div>
     <div class="panel-list" id="pickList"></div>
+  </div>
+</div>
+<div class="sheet" id="scanSheet">
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Preis auswählen">
+    <div class="panel-head" style="justify-content:space-between">
+      <div class="label" style="margin:0">Preis auswählen</div>
+      <button class="link" id="closeScan">Abbrechen</button>
+    </div>
+    <div class="scan-body">
+      <div class="shot" id="shot"></div>
+      <div class="scan-status" id="scanStatus"></div>
+      <div class="chips" id="chips"></div>
+      <div class="manual">Erkannte Preise antippen – im Foto oder in der Liste. Rot markiert = wahrscheinlichster Preis.</div>
+      <div style="margin-top:14px"><button class="btn" id="retake">Neues Foto</button></div>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -393,8 +438,200 @@
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 
+
+  // ================= Standort → Währung =================
+  const GEO = {"tz":{"Africa/Abidjan":"CI","Africa/Algiers":"DZ","Africa/Bissau":"GW","Africa/Cairo":"EG","Africa/Casablanca":"MA","Africa/Ceuta":"ES","Africa/El_Aaiun":"EH","Africa/Johannesburg":"ZA","Africa/Juba":"SS","Africa/Khartoum":"SD","Africa/Lagos":"NG","Africa/Maputo":"MZ","Africa/Monrovia":"LR","Africa/Nairobi":"KE","Africa/Ndjamena":"TD","Africa/Sao_Tome":"ST","Africa/Tripoli":"LY","Africa/Tunis":"TN","Africa/Windhoek":"NA","America/Adak":"US","America/Anchorage":"US","America/Araguaina":"BR","America/Argentina/Buenos_Aires":"AR","America/Argentina/Catamarca":"AR","America/Argentina/Cordoba":"AR","America/Argentina/Jujuy":"AR","America/Argentina/La_Rioja":"AR","America/Argentina/Mendoza":"AR","America/Argentina/Rio_Gallegos":"AR","America/Argentina/Salta":"AR","America/Argentina/San_Juan":"AR","America/Argentina/San_Luis":"AR","America/Argentina/Tucuman":"AR","America/Argentina/Ushuaia":"AR","America/Asuncion":"PY","America/Bahia":"BR","America/Bahia_Banderas":"MX","America/Barbados":"BB","America/Belem":"BR","America/Belize":"BZ","America/Boa_Vista":"BR","America/Bogota":"CO","America/Boise":"US","America/Cambridge_Bay":"CA","America/Campo_Grande":"BR","America/Cancun":"MX","America/Caracas":"VE","America/Cayenne":"GF","America/Chicago":"US","America/Chihuahua":"MX","America/Ciudad_Juarez":"MX","America/Costa_Rica":"CR","America/Coyhaique":"CL","America/Cuiaba":"BR","America/Danmarkshavn":"GL","America/Dawson":"CA","America/Dawson_Creek":"CA","America/Denver":"US","America/Detroit":"US","America/Edmonton":"CA","America/Eirunepe":"BR","America/El_Salvador":"SV","America/Fort_Nelson":"CA","America/Fortaleza":"BR","America/Glace_Bay":"CA","America/Goose_Bay":"CA","America/Grand_Turk":"TC","America/Guatemala":"GT","America/Guayaquil":"EC","America/Guyana":"GY","America/Halifax":"CA","America/Havana":"CU","America/Hermosillo":"MX","America/Indiana/Indianapolis":"US","America/Indiana/Knox":"US","America/Indiana/Marengo":"US","America/Indiana/Petersburg":"US","America/Indiana/Tell_City":"US","America/Indiana/Vevay":"US","America/Indiana/Vincennes":"US","America/Indiana/Winamac":"US","America/Inuvik":"CA","America/Iqaluit":"CA","America/Jamaica":"JM","America/Juneau":"US","America/Kentucky/Louisville":"US","America/Kentucky/Monticello":"US","America/La_Paz":"BO","America/Lima":"PE","America/Los_Angeles":"US","America/Maceio":"BR","America/Managua":"NI","America/Manaus":"BR","America/Martinique":"MQ","America/Matamoros":"MX","America/Mazatlan":"MX","America/Menominee":"US","America/Merida":"MX","America/Metlakatla":"US","America/Mexico_City":"MX","America/Miquelon":"PM","America/Moncton":"CA","America/Monterrey":"MX","America/Montevideo":"UY","America/New_York":"US","America/Nome":"US","America/Noronha":"BR","America/North_Dakota/Beulah":"US","America/North_Dakota/Center":"US","America/North_Dakota/New_Salem":"US","America/Nuuk":"GL","America/Ojinaga":"MX","America/Panama":"PA","America/Paramaribo":"SR","America/Phoenix":"US","America/Port-au-Prince":"HT","America/Porto_Velho":"BR","America/Puerto_Rico":"PR","America/Punta_Arenas":"CL","America/Rankin_Inlet":"CA","America/Recife":"BR","America/Regina":"CA","America/Resolute":"CA","America/Rio_Branco":"BR","America/Santarem":"BR","America/Santiago":"CL","America/Santo_Domingo":"DO","America/Sao_Paulo":"BR","America/Scoresbysund":"GL","America/Sitka":"US","America/St_Johns":"CA","America/Swift_Current":"CA","America/Tegucigalpa":"HN","America/Thule":"GL","America/Tijuana":"MX","America/Toronto":"CA","America/Vancouver":"CA","America/Whitehorse":"CA","America/Winnipeg":"CA","America/Yakutat":"US","Antarctica/Casey":"AQ","Antarctica/Davis":"AQ","Antarctica/Macquarie":"AU","Antarctica/Mawson":"AQ","Antarctica/Palmer":"AQ","Antarctica/Rothera":"AQ","Antarctica/Troll":"AQ","Antarctica/Vostok":"AQ","Asia/Almaty":"KZ","Asia/Amman":"JO","Asia/Anadyr":"RU","Asia/Aqtau":"KZ","Asia/Aqtobe":"KZ","Asia/Ashgabat":"TM","Asia/Atyrau":"KZ","Asia/Baghdad":"IQ","Asia/Baku":"AZ","Asia/Bangkok":"TH","Asia/Barnaul":"RU","Asia/Beirut":"LB","Asia/Bishkek":"KG","Asia/Chita":"RU","Asia/Colombo":"LK","Asia/Damascus":"SY","Asia/Dhaka":"BD","Asia/Dili":"TL","Asia/Dubai":"AE","Asia/Dushanbe":"TJ","Asia/Famagusta":"CY","Asia/Gaza":"PS","Asia/Hebron":"PS","Asia/Ho_Chi_Minh":"VN","Asia/Hong_Kong":"HK","Asia/Hovd":"MN","Asia/Irkutsk":"RU","Asia/Jakarta":"ID","Asia/Jayapura":"ID","Asia/Jerusalem":"IL","Asia/Kabul":"AF","Asia/Kamchatka":"RU","Asia/Karachi":"PK","Asia/Kathmandu":"NP","Asia/Khandyga":"RU","Asia/Kolkata":"IN","Asia/Krasnoyarsk":"RU","Asia/Kuching":"MY","Asia/Macau":"MO","Asia/Magadan":"RU","Asia/Makassar":"ID","Asia/Manila":"PH","Asia/Nicosia":"CY","Asia/Novokuznetsk":"RU","Asia/Novosibirsk":"RU","Asia/Omsk":"RU","Asia/Oral":"KZ","Asia/Pontianak":"ID","Asia/Pyongyang":"KP","Asia/Qatar":"QA","Asia/Qostanay":"KZ","Asia/Qyzylorda":"KZ","Asia/Riyadh":"SA","Asia/Sakhalin":"RU","Asia/Samarkand":"UZ","Asia/Seoul":"KR","Asia/Shanghai":"CN","Asia/Singapore":"SG","Asia/Srednekolymsk":"RU","Asia/Taipei":"TW","Asia/Tashkent":"UZ","Asia/Tbilisi":"GE","Asia/Tehran":"IR","Asia/Thimphu":"BT","Asia/Tokyo":"JP","Asia/Tomsk":"RU","Asia/Ulaanbaatar":"MN","Asia/Urumqi":"CN","Asia/Ust-Nera":"RU","Asia/Vladivostok":"RU","Asia/Yakutsk":"RU","Asia/Yangon":"MM","Asia/Yekaterinburg":"RU","Asia/Yerevan":"AM","Atlantic/Azores":"PT","Atlantic/Bermuda":"BM","Atlantic/Canary":"ES","Atlantic/Cape_Verde":"CV","Atlantic/Faroe":"FO","Atlantic/Madeira":"PT","Atlantic/South_Georgia":"GS","Atlantic/Stanley":"FK","Australia/Adelaide":"AU","Australia/Brisbane":"AU","Australia/Broken_Hill":"AU","Australia/Darwin":"AU","Australia/Eucla":"AU","Australia/Hobart":"AU","Australia/Lindeman":"AU","Australia/Lord_Howe":"AU","Australia/Melbourne":"AU","Australia/Perth":"AU","Australia/Sydney":"AU","Europe/Andorra":"AD","Europe/Astrakhan":"RU","Europe/Athens":"GR","Europe/Belgrade":"RS","Europe/Berlin":"DE","Europe/Brussels":"BE","Europe/Bucharest":"RO","Europe/Budapest":"HU","Europe/Chisinau":"MD","Europe/Dublin":"IE","Europe/Gibraltar":"GI","Europe/Helsinki":"FI","Europe/Istanbul":"TR","Europe/Kaliningrad":"RU","Europe/Kirov":"RU","Europe/Kyiv":"UA","Europe/Lisbon":"PT","Europe/London":"GB","Europe/Madrid":"ES","Europe/Malta":"MT","Europe/Minsk":"BY","Europe/Moscow":"RU","Europe/Paris":"FR","Europe/Prague":"CZ","Europe/Riga":"LV","Europe/Rome":"IT","Europe/Samara":"RU","Europe/Saratov":"RU","Europe/Simferopol":"RU","Europe/Sofia":"BG","Europe/Tallinn":"EE","Europe/Tirane":"AL","Europe/Ulyanovsk":"RU","Europe/Vienna":"AT","Europe/Vilnius":"LT","Europe/Volgograd":"RU","Europe/Warsaw":"PL","Europe/Zurich":"CH","Indian/Chagos":"IO","Indian/Maldives":"MV","Indian/Mauritius":"MU","Pacific/Apia":"WS","Pacific/Auckland":"NZ","Pacific/Bougainville":"PG","Pacific/Chatham":"NZ","Pacific/Easter":"CL","Pacific/Efate":"VU","Pacific/Fakaofo":"TK","Pacific/Fiji":"FJ","Pacific/Galapagos":"EC","Pacific/Gambier":"PF","Pacific/Guadalcanal":"SB","Pacific/Guam":"GU","Pacific/Honolulu":"US","Pacific/Kanton":"KI","Pacific/Kiritimati":"KI","Pacific/Kosrae":"FM","Pacific/Kwajalein":"MH","Pacific/Marquesas":"PF","Pacific/Nauru":"NR","Pacific/Niue":"NU","Pacific/Norfolk":"NF","Pacific/Noumea":"NC","Pacific/Pago_Pago":"AS","Pacific/Palau":"PW","Pacific/Pitcairn":"PN","Pacific/Port_Moresby":"PG","Pacific/Rarotonga":"CK","Pacific/Tahiti":"PF","Pacific/Tarawa":"KI","Pacific/Tongatapu":"TO"},"cur":{"AD":"EUR","AE":"AED","AF":"AFN","AG":"XCD","AI":"XCD","AL":"ALL","AM":"AMD","AN":"ANG","AO":"AOA","AQ":"USD","AR":"ARS","AS":"USD","AT":"EUR","AU":"AUD","AW":"AWG","AX":"EUR","AZ":"AZN","BA":"BAM","BB":"BBD","BD":"BDT","BE":"EUR","BF":"XOF","BG":"EUR","BH":"BHD","BI":"BIF","BJ":"XOF","BL":"EUR","BM":"BMD","BN":"BND","BO":"BOB","BQ":"USD","BR":"BRL","BS":"BSD","BT":"BTN","BV":"NOK","BW":"BWP","BY":"BYN","BZ":"BZD","CA":"CAD","CC":"AUD","CD":"CDF","CF":"XAF","CG":"XAF","CH":"CHF","CI":"XOF","CK":"NZD","CL":"CLP","CM":"XAF","CN":"CNY","CO":"COP","CR":"CRC","CU":"CUP","CV":"CVE","CW":"XCG","CX":"AUD","CY":"EUR","CZ":"CZK","DE":"EUR","DJ":"DJF","DK":"DKK","DM":"XCD","DO":"DOP","DZ":"DZD","EC":"USD","EE":"EUR","EG":"EGP","EH":"MAD","ER":"ERN","ES":"EUR","ET":"ETB","FI":"EUR","FJ":"FJD","FK":"FKP","FM":"USD","FO":"DKK","FR":"EUR","GA":"XAF","GB":"GBP","GD":"XCD","GE":"GEL","GF":"EUR","GG":"GBP","GH":"GHS","GI":"GIP","GL":"DKK","GM":"GMD","GN":"GNF","GP":"EUR","GQ":"XAF","GR":"EUR","GS":"FKP","GT":"GTQ","GU":"USD","GW":"XOF","GY":"GYD","HK":"HKD","HM":"AUD","HN":"HNL","HR":"EUR","HT":"HTG","HU":"HUF","ID":"IDR","IE":"EUR","IL":"ILS","IM":"GBP","IN":"INR","IO":"USD","IQ":"IQD","IR":"IRR","IS":"ISK","IT":"EUR","JE":"GBP","JM":"JMD","JO":"JOD","JP":"JPY","KE":"KES","KG":"KGS","KH":"KHR","KI":"AUD","KM":"KMF","KN":"XCD","KP":"KPW","KR":"KRW","KW":"KWD","KY":"KYD","KZ":"KZT","LA":"LAK","LB":"LBP","LC":"XCD","LI":"CHF","LK":"LKR","LR":"LRD","LS":"LSL","LT":"EUR","LU":"EUR","LV":"EUR","LY":"LYD","MA":"MAD","MC":"EUR","MD":"MDL","ME":"EUR","MF":"EUR","MG":"MGA","MH":"USD","MK":"MKD","ML":"XOF","MM":"MMK","MN":"MNT","MO":"MOP","MP":"USD","MQ":"EUR","MR":"MRU","MS":"XCD","MT":"EUR","MU":"MUR","MV":"MVR","MW":"MWK","MX":"MXN","MY":"MYR","MZ":"MZN","NA":"NAD","NC":"XPF","NE":"XOF","NF":"AUD","NG":"NGN","NI":"NIO","NL":"EUR","NO":"NOK","NP":"NPR","NR":"AUD","NU":"NZD","NZ":"NZD","OM":"OMR","PA":"PAB","PE":"PEN","PF":"XPF","PG":"PGK","PH":"PHP","PK":"PKR","PL":"PLN","PM":"EUR","PN":"NZD","PR":"USD","PS":"ILS","PT":"EUR","PW":"USD","PY":"PYG","QA":"QAR","RE":"EUR","RO":"RON","RS":"RSD","RU":"RUB","RW":"RWF","SA":"SAR","SB":"SBD","SC":"SCR","SD":"SDG","SE":"SEK","SG":"SGD","SH":"SHP","SI":"EUR","SJ":"NOK","SK":"EUR","SL":"SLE","SM":"EUR","SN":"XOF","SO":"SOS","SR":"SRD","SS":"SSP","ST":"STN","SV":"USD","SX":"XCG","SY":"SYP","SZ":"SZL","TC":"USD","TD":"XAF","TF":"EUR","TG":"XOF","TH":"THB","TJ":"TJS","TK":"NZD","TL":"USD","TM":"TMT","TN":"TND","TO":"TOP","TR":"TRY","TT":"TTD","TV":"AUD","TW":"TWD","TZ":"TZS","UA":"UAH","UG":"UGX","UM":"USD","US":"USD","UY":"UYU","UZ":"UZS","VA":"EUR","VC":"XCD","VE":"VES","VG":"USD","VI":"USD","VN":"VND","VU":"VUV","WF":"XPF","WS":"WST","XK":"EUR","YE":"YER","YT":"EUR","ZA":"ZAR","ZM":"ZMW","ZW":"ZWG"}};
+  const regionNames = (() => { try { return new Intl.DisplayNames(["de"], {type:"region"}); } catch(e){ return null; } })();
+  const countryName = cc => { try { return (regionNames && regionNames.of(cc)) || cc; } catch(e){ return cc; } };
+  const HOME = () => state.home || "EUR";
+
+  function countryFromTimezone(){
+    try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; return GEO.tz[tz] || null; } catch(e){ return null; }
+  }
+  function setLocText(cc){
+    const cur = cc && GEO.cur[cc];
+    $("locText").innerHTML = cc ? `${countryName(cc)} <span class="sub">· ${cur || "?"}</span>` : "Standort";
+  }
+  function applyCountry(cc, force){
+    const cur = GEO.cur[cc];
+    setLocText(cc);
+    if (!cur || !data.rates[cur]) { if (force) toast(`${countryName(cc)}: Währung nicht verfügbar`); return; }
+    if (!force && state.lastAutoCountry === cc) return;   // manuelle Auswahl nicht bei jedem Öffnen überschreiben
+    state.lastAutoCountry = cc;
+    if (cur === HOME()) {
+      if (state.from !== HOME()) { const prev = state.from; state.from = HOME(); if (state.to === HOME()) state.to = prev; render(); }
+      if (force) toast(`${countryName(cc)} – Heimatwährung ${cur}`);
+      save(); return;
+    }
+    state.from = cur; state.to = HOME(); save(); render();
+    toast(`${countryName(cc)} erkannt: ${cur} → ${HOME()}`);
+  }
+  function autoDetect(){ const cc = countryFromTimezone(); if (cc) applyCountry(cc, false); }
+
+  async function preciseDetect(){
+    $("locText").textContent = "Suche…";
+    const fallback = () => { const cc = countryFromTimezone(); if (cc) applyCountry(cc, true); else { setLocText(null); toast("Standort nicht erkannt"); } };
+    if (!navigator.geolocation || !navigator.onLine) return fallback();
+    navigator.geolocation.getCurrentPosition(async pos => {
+      try {
+        const {latitude, longitude} = pos.coords;
+        const j = await fetchJSON(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=de`);
+        if (j.countryCode) applyCountry(j.countryCode.toUpperCase(), true); else fallback();
+      } catch(e){ fallback(); }
+    }, fallback, {enableHighAccuracy:false, timeout:10000, maximumAge:600000});
+  }
+  $("locBtn").addEventListener("click", preciseDetect);
+
+  // ================= Preis scannen (Texterkennung auf dem Gerät) =================
+  const OCR_CACHE = "wr-ocr-v1";
+  const simd = (() => { try { return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11])); } catch(e){ return false; } })();
+  const base = new URL(".", location.href).href;
+  const OCR_FILES = {
+    lib: base + "ocr/tesseract.min.js",
+    worker: base + "ocr/worker.min.js",
+    core: base + "ocr/core/" + (simd ? "tesseract-core-simd-lstm.wasm.js" : "tesseract-core-lstm.wasm.js"),
+    lang: base + "ocr/lang/eng.traineddata.gz"
+  };
+  let ocrWorker = null, ocrBusy = false, ocrProgress = null;
+
+  function loadScript(src){
+    return new Promise((res, rej) => { if (window.Tesseract) return res();
+      const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  }
+  async function getWorker(){
+    if (ocrWorker) return ocrWorker;
+    await loadScript(OCR_FILES.lib);
+    ocrWorker = await Tesseract.createWorker("eng", 1, {
+      workerPath: OCR_FILES.worker, corePath: OCR_FILES.core, langPath: base + "ocr/lang",
+      gzip: true, workerBlobURL: false,
+      logger: m => { if (m.status === "recognizing text" && ocrProgress) ocrProgress(m.progress); }
+    });
+    await ocrWorker.setParameters({ tessedit_char_whitelist: "0123456789.,-€$£¥ ", tessedit_pageseg_mode: "11" });
+    return ocrWorker;
+  }
+  // Texterkennung für die Offline-Nutzung vorab auf dem Gerät speichern
+  async function prefetchOCR(){
+    if (!("caches" in window) || !navigator.onLine || LS.get("ocr_cached", false)) return;
+    try { const c = await caches.open(OCR_CACHE); await c.addAll(Object.values(OCR_FILES)); LS.set("ocr_cached", true); } catch(e){}
+  }
+
+  // Bild verkleinern + Graustufen/Kontrast für bessere Erkennung
+  function prepareImage(file){
+    return new Promise((res, rej) => {
+      const img = new Image(); const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const max = 1800, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * sc), hgt = Math.round(img.height * sc);
+        const cv = document.createElement("canvas"); cv.width = w; cv.height = hgt;
+        const cx = cv.getContext("2d"); cx.drawImage(img, 0, 0, w, hgt);
+        const preview = cv.toDataURL("image/jpeg", .85);
+        const d = cx.getImageData(0, 0, w, hgt), px = d.data;
+        for (let i = 0; i < px.length; i += 4){
+          let g = .299*px[i] + .587*px[i+1] + .114*px[i+2];
+          g = Math.max(0, Math.min(255, (g - 128) * 1.4 + 128));
+          px[i] = px[i+1] = px[i+2] = g;
+        }
+        cx.putImageData(d, 0, 0);
+        URL.revokeObjectURL(url);
+        res({canvas: cv, preview, w, h: hgt});
+      };
+      img.onerror = rej; img.src = url;
+    });
+  }
+
+  // Zahl aus Preistext lesen: "1.299,00", "12,99", "12.99", "1 299", "12,-"
+  function parsePrice(raw){
+    let s = raw.replace(/[€$£¥]/g, "").replace(/,-+$|\.-+$/, "").trim();
+    if (!/\d/.test(s)) return null;
+    s = s.replace(/^[^\d]+|[^\d]+$/g, "");
+    const m = s.match(/^(.*?)([.,])(\d{1,2})$/);
+    let intPart = s, dec = "";
+    if (m) { intPart = m[1]; dec = m[3]; }
+    intPart = intPart.replace(/[.,\s']/g, "");
+    if (!/^\d+$/.test(intPart)) return null;
+    const v = parseFloat(intPart + (dec ? "." + dec : ""));
+    if (!isFinite(v) || v <= 0 || v > 1e8) return null;
+    return { value: v, hasDec: !!dec };
+  }
+  function findPrices(result, W, H){
+    const out = [];
+    const add = (text, bbox, conf) => {
+      const re = /[€$£¥]?\s?\d{1,3}(?:[ .,']\d{3})*(?:[.,]\d{1,2}|,-)?\s?[€$£¥]?|[€$£¥]?\s?\d+(?:[.,]\d{1,2})?\s?[€$£¥]?/g;
+      let mm; while ((mm = re.exec(text))){
+        const p = parsePrice(mm[0]); if (!p) continue;
+        const hgt = bbox.y1 - bbox.y0;
+        const cur = /[€$£¥]/.test(mm[0]);
+        // Bewertung: Schriftgröße zählt am meisten, Nachkommastellen/Währungszeichen geben Bonus
+        const score = hgt * (p.hasDec ? 1.35 : 1) * (cur ? 1.25 : 1) * (conf > 60 ? 1 : .8) * (/^(19|20)\d\d$/.test(String(p.value)) ? .4 : 1);
+        out.push({ ...p, text: mm[0].trim(), bbox, score });
+      }
+    };
+    const walk = (blocks) => (blocks || []).forEach(b => (b.paragraphs || []).forEach(pa => (pa.lines || []).forEach(l => {
+      add(l.text || "", l.bbox, l.confidence);
+      (l.words || []).forEach(w => add(w.text || "", w.bbox, w.confidence));
+    })));
+    walk(result.blocks);
+    // Doppelte Werte zusammenfassen (bester Treffer bleibt)
+    const best = new Map();
+    out.forEach(c => { const k = c.value.toFixed(2); if (!best.has(k) || best.get(k).score < c.score) best.set(k, c); });
+    const sorted = [...best.values()].sort((a, b) => b.score - a.score);
+    const top = sorted.length ? sorted[0].score : 0;
+    // Nur plausible Kandidaten: mind. 30 % so groß/sicher wie der beste, höchstens 5
+    return sorted.filter(c => c.score >= top * .3).slice(0, 5);
+  }
+
+  function pickPrice(v){
+    const s = new Intl.NumberFormat("de-DE", {minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2, useGrouping:false}).format(v);
+    $("amount").value = s; state.amount = s; save(); render();
+    $("scanSheet").classList.remove("open");
+    toast(`${s} ${state.from} übernommen`);
+  }
+
+  async function runScan(file){
+    if (ocrBusy) return; ocrBusy = true;
+    $("scanSheet").classList.add("open");
+    $("chips").innerHTML = ""; $("shot").innerHTML = "";
+    $("scanStatus").textContent = "Foto wird vorbereitet…";
+    try {
+      const img = await prepareImage(file);
+      $("shot").innerHTML = `<img src="${img.preview}" alt="Foto">`;
+      $("scanStatus").textContent = ocrWorker ? "Text wird erkannt…" : "Texterkennung wird gestartet…";
+      ocrProgress = p => { $("scanStatus").textContent = `Text wird erkannt… ${Math.round(p*100)} %`; };
+      const w = await getWorker();
+      const { data: res } = await w.recognize(img.canvas, {}, { text: true, blocks: true });
+      const cands = findPrices(res, img.w, img.h);
+      if (!cands.length){ $("scanStatus").textContent = "Kein Preis erkannt. Bitte näher ran und gerade fotografieren."; return; }
+      $("scanStatus").textContent = cands.length === 1 ? "1 Preis gefunden:" : `${cands.length} mögliche Preise gefunden:`;
+      $("chips").innerHTML = cands.map((c, i) => {
+        const conv = convert(c.value, state.from, state.to);
+        return `<button class="chip ${i===0?"best":""}" data-v="${c.value}">${fmt(c.value)} ${state.from}<small>≈ ${isFinite(conv)?fmt(conv):"–"} ${state.to}</small></button>`;
+      }).join("");
+      const shot = $("shot");
+      cands.forEach((c, i) => {
+        const b = document.createElement("button");
+        b.className = "box" + (i === 0 ? " best" : ""); b.dataset.v = c.value; b.setAttribute("aria-label", fmt(c.value));
+        Object.assign(b.style, { left: (c.bbox.x0 / img.w * 100) + "%", top: (c.bbox.y0 / img.h * 100) + "%",
+          width: ((c.bbox.x1 - c.bbox.x0) / img.w * 100) + "%", height: ((c.bbox.y1 - c.bbox.y0) / img.h * 100) + "%" });
+        shot.appendChild(b);
+      });
+    } catch(e){
+      $("scanStatus").textContent = navigator.onLine
+        ? "Texterkennung fehlgeschlagen. Bitte erneut versuchen."
+        : "Texterkennung ist offline noch nicht verfügbar – bitte einmal mit Internet öffnen.";
+    } finally { ocrBusy = false; ocrProgress = null; }
+  }
+
+  $("scanBtn").addEventListener("click", () => { $("scanInput").value = ""; $("scanInput").click(); });
+  $("retake").addEventListener("click", () => { $("scanInput").value = ""; $("scanInput").click(); });
+  $("scanInput").addEventListener("change", e => { const f = e.target.files && e.target.files[0]; if (f) runScan(f); });
+  $("closeScan").addEventListener("click", () => $("scanSheet").classList.remove("open"));
+  $("chips").addEventListener("click", e => { const c = e.target.closest("[data-v]"); if (c) pickPrice(parseFloat(c.dataset.v)); });
+  $("shot").addEventListener("click", e => { const c = e.target.closest("[data-v]"); if (c) pickPrice(parseFloat(c.dataset.v)); });
+
   render();
-  loadRates(false);
+  autoDetect();
+  loadRates(false).then(() => autoDetect());
+  setTimeout(prefetchOCR, 4000);
 })();
 </script>
 </body>
